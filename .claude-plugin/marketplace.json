@@ -1,0 +1,15 @@
+{
+  "name": "coldlogic-plugins",
+  "owner": { "name": "Derek Williams", "email": "derek@coldlogic.dev" },
+  "metadata": {
+    "description": "Cold Logic's shared Claude Code setup: conventions, a staleness check and the plugin set every project uses"
+  },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official", "openai-codex"],
+  "plugins": [
+    {
+      "name": "coldlogic",
+      "source": "./plugins/coldlogic",
+      "description": "Cold Logic conventions and the plugin set used across projects"
+    }
+  ]
+}

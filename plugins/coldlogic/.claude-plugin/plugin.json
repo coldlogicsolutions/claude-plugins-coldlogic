@@ -1,0 +1,14 @@
+{
+  "name": "coldlogic",
+  "description": "Cold Logic conventions and the plugin set used across projects",
+  "author": { "name": "Derek Williams", "email": "derek@coldlogic.dev" },
+  "dependencies": [
+    "codex@openai-codex",
+    "coderabbit@claude-plugins-official",
+    "pr-review-toolkit@claude-plugins-official",
+    "code-review@claude-plugins-official",
+    "commit-commands@claude-plugins-official",
+    "context7@claude-plugins-official",
+    "github@claude-plugins-official"
+  ]
+}
