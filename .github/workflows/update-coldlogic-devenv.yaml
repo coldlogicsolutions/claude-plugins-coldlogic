@@ -1,0 +1,123 @@
+# Copied into each project as .github/workflows/update-coldlogic-devenv.yaml.
+#
+# Moves the project's coldlogic-devenv pin forward and proposes it as a PR,
+# opened as the coldlogic-ai App like every other automated PR. The project's
+# own CI on that PR is the test (an App token, unlike GITHUB_TOKEN, triggers
+# it). Runs weekly, by hand, and when coldlogic-devenv's main moves: its
+# dispatch-updates workflow sends every repository the
+# `coldlogic-devenv-updated` event.
+#
+# Needs the COLDLOGIC_AI_CLIENT_ID and COLDLOGIC_AI_PRIVATE_KEY secrets, which
+# the infrastructure stack puts in a `coldlogic-ai` environment, deployable
+# only from main, in every registered repository. Only the second job sees
+# them: the first runs Nix and devenv, and hands over nothing but devenv.lock.
+name: Update coldlogic-devenv
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [coldlogic-devenv-updated]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-coldlogic-devenv-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      - name: Update the pin
+        run: devenv update coldlogic-devenv
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: devenv-lock
+          path: devenv.lock
+          retention-days: 1
+
+  pull-request:
+    needs: update
+    # Only main's copy of this workflow may use the App key: the environment
+    # enforces that, and this skips the job instead of failing it.
+    if: github.ref == 'refs/heads/main'
+    environment: coldlogic-ai
+    runs-on: ubuntu-latest
+    # The App token does the writing; GITHUB_TOKEN only checks out.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: devenv-lock
+          path: updated
+
+      # The first job ran third-party code, so its lock is only a source of
+      # three values, each checked: the revision must be the module's main as
+      # GitHub reports it, and the new lock is the repository's own with just
+      # those values replaced. Nix verifies narHash when it fetches the
+      # revision. Fails closed.
+      - name: Take the new revision from the updated lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node='.nodes."coldlogic-devenv".locked'
+          rev=$(jq -er "$node.rev" updated/devenv.lock)
+          nar_hash=$(jq -er "$node.narHash" updated/devenv.lock)
+          last_modified=$(jq -er "$node.lastModified" updated/devenv.lock)
+          main=$(gh api repos/coldlogicsolutions/coldlogic-devenv/commits/main --jq .sha)
+          [[ $main =~ ^[0-9a-f]{40}$ ]] || { echo "could not resolve coldlogic-devenv's main" >&2; exit 1; }
+          [[ $rev == "$main" ]] || { echo "revision $rev is not coldlogic-devenv's main ($main)" >&2; exit 1; }
+          [[ $nar_hash =~ ^sha256-[A-Za-z0-9+/]+=*$ ]] || { echo "bad narHash" >&2; exit 1; }
+          [[ $last_modified =~ ^[0-9]{1,12}$ ]] || { echo "bad lastModified" >&2; exit 1; }
+          # devenv writes the lock without a trailing newline; so does this.
+          new_lock=$(jq --arg rev "$rev" --arg hash "$nar_hash" --argjson modified "$last_modified" \
+            "$node |= (.rev = \$rev | .narHash = \$hash | .lastModified = \$modified)" devenv.lock)
+          printf '%s' "$new_lock" > devenv.lock.new
+          mv devenv.lock.new devenv.lock
+          rm updated/devenv.lock
+          rmdir updated
+
+      # Limited to this repository and to what opening a PR needs.
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.COLDLOGIC_AI_CLIENT_ID }}
+          private-key: ${{ secrets.COLDLOGIC_AI_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      # Opens the PR, or refreshes the open one, only when devenv.lock moved.
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: chore/update-coldlogic-devenv
+          add-paths: devenv.lock
+          commit-message: "chore(devenv): update coldlogic-devenv"
+          title: Update coldlogic-devenv
+          body: |
+            ## Summary
+            - Moves `coldlogic-devenv` in `devenv.lock` to the module's latest revision.
+
+            ## Test plan
+            - CI tests this PR.
+          reviewers: derekjw
+          draft: false
