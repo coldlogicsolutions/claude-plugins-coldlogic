@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
+inputs:
+  git-hooks:
+    url: github:cachix/git-hooks.nix
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-unstable
+  rust-overlay:
+    url: github:oxalica/rust-overlay
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  # The shared Cold Logic setup: git hooks, Claude Code settings, guard hook
+  # and this plugin, gh-app.
+  coldlogic-devenv:
+    url: github:coldlogicsolutions/coldlogic-devenv
+    flake: false
+imports:
+  - coldlogic-devenv
+profile: developer
