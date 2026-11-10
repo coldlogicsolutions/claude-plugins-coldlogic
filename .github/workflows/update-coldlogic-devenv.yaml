@@ -38,7 +38,7 @@ jobs:
       - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
 
       - name: Install devenv
-        run: nix profile install nixpkgs#devenv
+        run: nix profile add nixpkgs#devenv
 
       - name: Update the pin
         run: devenv update coldlogic-devenv
@@ -70,8 +70,9 @@ jobs:
           path: updated
 
       # The first job ran third-party code, so its lock is only a source of
-      # three values, each checked: the revision must be the module's main as
-      # GitHub reports it, and the new lock is the repository's own with just
+      # three values, each checked: the revision must be on the module's main
+      # as GitHub reports it (main itself, or behind it if main moved since
+      # the first job), and the new lock is the repository's own with just
       # those values replaced. Nix verifies narHash when it fetches the
       # revision. Fails closed.
       - name: Take the new revision from the updated lock
@@ -83,9 +84,18 @@ jobs:
           rev=$(jq -er "$node.rev" updated/devenv.lock)
           nar_hash=$(jq -er "$node.narHash" updated/devenv.lock)
           last_modified=$(jq -er "$node.lastModified" updated/devenv.lock)
-          main=$(gh api repos/coldlogicsolutions/coldlogic-devenv/commits/main --jq .sha)
-          [[ $main =~ ^[0-9a-f]{40}$ ]] || { echo "could not resolve coldlogic-devenv's main" >&2; exit 1; }
-          [[ $rev == "$main" ]] || { echo "revision $rev is not coldlogic-devenv's main ($main)" >&2; exit 1; }
+          [[ $rev =~ ^[0-9a-f]{40}$ ]] || { echo "bad revision" >&2; exit 1; }
+          # main compared with the revision: "identical", or "ahead" when main
+          # has moved on from it. Anything else is a revision off main.
+          status=$(gh api "repos/coldlogicsolutions/coldlogic-devenv/compare/$rev...main" --jq .status)
+          [[ $status == identical || $status == ahead ]] ||
+            { echo "revision $rev is not on coldlogic-devenv's main ($status)" >&2; exit 1; }
+          # Nor behind the project's current pin: an update never rolls back.
+          current=$(jq -er "$node.rev" devenv.lock)
+          [[ $current =~ ^[0-9a-f]{40}$ ]] || { echo "bad current revision" >&2; exit 1; }
+          status=$(gh api "repos/coldlogicsolutions/coldlogic-devenv/compare/$current...$rev" --jq .status)
+          [[ $status == identical || $status == ahead ]] ||
+            { echo "revision $rev is behind the current pin $current ($status)" >&2; exit 1; }
           [[ $nar_hash =~ ^sha256-[A-Za-z0-9+/]+=*$ ]] || { echo "bad narHash" >&2; exit 1; }
           [[ $last_modified =~ ^[0-9]{1,12}$ ]] || { echo "bad lastModified" >&2; exit 1; }
           # devenv writes the lock without a trailing newline; so does this.
@@ -95,6 +105,44 @@ jobs:
           mv devenv.lock.new devenv.lock
           rm updated/devenv.lock
           rmdir updated
+
+      # Moves the inputs the module asks projects to declare, and devenv, to
+      # the revisions the module itself locks, read from GitHub at the revision checked
+      # above. The module's cache job (dispatch-updates.yaml) builds and
+      # pushes the shells with exactly these, so the project's shells
+      # download rather than build. An input the project declares differently
+      # (another branch, say) is left alone.
+      - name: Align nixpkgs, rust-overlay, git-hooks and devenv with the module's
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rev=$(jq -er '.nodes."coldlogic-devenv".locked.rev' devenv.lock)
+          module=$(gh api -H 'Accept: application/vnd.github.raw' \
+            "repos/coldlogicsolutions/coldlogic-devenv/contents/devenv.lock?ref=$rev")
+          for input in nixpkgs rust-overlay git-hooks devenv; do
+            # The node each lock names for the input; a `follows` is a list.
+            ours=$(jq -r --arg i "$input" '.nodes.root.inputs[$i] | strings' devenv.lock)
+            theirs=$(jq -r --arg i "$input" '.nodes.root.inputs[$i] | strings' <<<"$module")
+            if [[ -z $ours || -z $theirs ]]; then
+              echo "$input: not a direct input of both locks, left alone"
+              continue
+            fi
+            # Declared the same way: the same source, and the same `follows`
+            # (rust-overlay's nixpkgs), with any input of its own as its own.
+            if ! jq -e --arg o "$ours" --arg t "$theirs" --argjson m "$module" '
+              def shape: (.inputs // {}) | map_values(if type == "array" then . else "own" end);
+              .nodes[$o].original == $m.nodes[$t].original
+                and (.nodes[$o] | shape) == ($m.nodes[$t] | shape)' devenv.lock >/dev/null; then
+              echo "$input: declared differently from the module's, left alone"
+              continue
+            fi
+            new_lock=$(jq --arg o "$ours" --arg t "$theirs" --argjson m "$module" \
+              '.nodes[$o].locked = $m.nodes[$t].locked' devenv.lock)
+            printf '%s' "$new_lock" > devenv.lock.new
+            mv devenv.lock.new devenv.lock
+            echo "$input: $(jq -r --arg o "$ours" '.nodes[$o].locked.rev // "?"' devenv.lock)"
+          done
 
       # Limited to this repository and to what opening a PR needs.
       - id: app-token
@@ -106,18 +154,33 @@ jobs:
           permission-pull-requests: write
 
       # Opens the PR, or refreshes the open one, only when devenv.lock moved.
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - id: pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ steps.app-token.outputs.token }}
           branch: chore/update-coldlogic-devenv
           add-paths: devenv.lock
           commit-message: "chore(devenv): update coldlogic-devenv"
+          # The App's bot user, not whoever triggered the run.
+          author: coldlogic-ai[bot] <319737866+coldlogic-ai[bot]@users.noreply.github.com>
+          committer: coldlogic-ai[bot] <319737866+coldlogic-ai[bot]@users.noreply.github.com>
           title: Update coldlogic-devenv
           body: |
             ## Summary
             - Moves `coldlogic-devenv` in `devenv.lock` to the module's latest revision.
+            - Moves `nixpkgs`, `rust-overlay`, `git-hooks` and `devenv` to the revisions the module locks, where the project declares them the same way, so its shells come from the `coldlogic` cache.
 
             ## Test plan
-            - CI tests this PR.
+            - CI tests this PR. Auto-merge is on: it merges once approved and green.
           reviewers: derekjw
           draft: false
+
+      # Approval is still required (the ruleset): this only saves merging by
+      # hand once it's given and CI passes. Squash is the merge method every
+      # repository allows.
+      - name: Turn on auto-merge
+        if: steps.pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ steps.pr.outputs.pull-request-number }}
+        run: gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --auto --squash
