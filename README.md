@@ -21,7 +21,8 @@ Projects never install it by hand. The [coldlogic-devenv](https://github.com/col
 
 ```bash
 claude --plugin-dir ./plugins/coldlogic
-scripts/validate.sh   # validate --strict, except the deliberately missing version
+scripts/check.sh      # the gate: validate.sh, then openspec validate --all --strict
+scripts/validate.sh   # fails on any validation error or warning except the deliberately missing version
 ```
 
 Add code here only for something Claude Code, an official plugin and the devenv module can't already do.
