@@ -49,12 +49,16 @@ Tested by: none.
 - **THEN** the syntax check passes
 
 ### Requirement: Failures are collected unless a check aborts the script
-The script SHALL keep running after a manifest validation, syntax or conventions-length check (see `conventions-injection`) fails, and SHALL exit non-zero if any failed and zero only when all pass. Under `set -euo pipefail`, validator output that isn't JSON SHALL abort it at the `jq` step, skipping the later checks, and a failing `conventions.sh` SHALL abort it with no message of its own (#37).
+The script SHALL keep running after a manifest validation, syntax, conventions-length, part-assignment or part-hook check (see `conventions-injection`) fails, and SHALL exit non-zero if any failed and zero only when all pass. Under `set -euo pipefail`, validator output that isn't JSON SHALL abort it at the `jq` step, skipping the later checks, and a failing `conventions.sh` SHALL abort it with no message of its own (#37).
 
 Tested by: none.
 
 #### Scenario: Two failures that don't abort
-- **WHEN** a manifest has a validation error and the conventions are over budget
+- **WHEN** a manifest has a validation error and one conventions part is over budget
+- **THEN** the script reports both and exits non-zero
+
+#### Scenario: Several conventions failures
+- **WHEN** one conventions file is in no part and another part is over budget
 - **THEN** the script reports both and exits non-zero
 
 #### Scenario: Validator output that isn't JSON
@@ -63,7 +67,7 @@ Tested by: none.
 
 #### Scenario: conventions.sh fails
 - **WHEN** `conventions/process.md` is missing
-- **THEN** the script exits non-zero without printing a conventions message
+- **THEN** the script prints `conventions: process.md is in the table but doesn't exist` to stderr, then aborts with a non-zero status when `conventions.sh 1` fails, without a length message
 
 #### Scenario: All clear
 - **WHEN** every check passes

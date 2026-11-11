@@ -3,7 +3,8 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/conventions.sh" }
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/conventions.sh 1" },
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/conventions.sh 2" }
         ]
       },
       {

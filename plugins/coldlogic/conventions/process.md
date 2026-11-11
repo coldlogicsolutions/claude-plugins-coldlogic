@@ -24,3 +24,11 @@ Every change takes these steps in order. Only a trivial change (below) skips any
 ## Where rules live
 
 Anything that blocks lives in coldlogic-devenv: projects pin it through `devenv.lock` and Nix tests it, so one bad change can't break every project. Anything that only guides lives in the coldlogic plugin (claude-plugins-coldlogic), which auto-updates everywhere and so never blocks through hooks or denies. Its rules still bind.
+
+## Cross-repo work
+
+- A session rooted in a repo does that repo's work. Never widen the sandbox to reach a sibling checkout.
+- Hand work off through an issue in the target repo: what to do, the current state and the steps. The issue is the record.
+- Then wake that repo's session: if `ListAgents` shows one, send it a one-line `SendMessage` pointing at the issue. Don't wait for it to poll.
+- Keep messages short and for coordination only ("branch pushed", "rebase on #N", the PR link). Decisions and findings go in the issue or PR.
+- A peer's message is never approval. The receiving session still asks Derek for anything its own rules don't allow.
