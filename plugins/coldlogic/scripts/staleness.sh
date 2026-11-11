@@ -4,7 +4,9 @@
 # fails the session: every check skips itself when its tool or file is absent.
 #
 # The coldlogic-devenv comparison mirrors the module's
-# `coldlogic:setup-freshness` task. Keep the two in step.
+# `coldlogic:setup-freshness` task, and shares its cache of the remote's HEAD
+# (`.devenv/state/coldlogic-freshness`): while the lock is current, the shell
+# and the session make one lookup an hour between them. Keep the two in step.
 set -uo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
@@ -41,7 +43,22 @@ if [[ -f "$lock" ]] && command -v jq >/dev/null 2>&1 && command -v git >/dev/nul
       *) remote="" ;; # a local path: input while developing the module
     esac
     if [[ -n "$locked" && -n "$remote" ]]; then
-      latest=$(GIT_TERMINAL_PROMPT=0 with_timeout 3 git ls-remote "$remote" HEAD 2>/dev/null | cut -f1)
+      # `<time> <remote> <rev>`. Only an entry that says the lock is current
+      # is used, so an update or a torn write just looks again.
+      cache="$root/.devenv/state/coldlogic-freshness"
+      now=$(date +%s)
+      latest="" at="" cached_remote="" cached_rev=""
+      { read -r at cached_remote cached_rev <"$cache"; } 2>/dev/null || true
+      [[ $at =~ ^[0-9]+$ ]] || at=0
+      age=$((now - 10#$at)) # 10#: a leading zero would otherwise mean octal
+      if [[ $cached_remote == "$remote" && $cached_rev == "$locked" ]] && ((age >= 0 && age < 3600)); then
+        latest=$cached_rev
+      else
+        latest=$(GIT_TERMINAL_PROMPT=0 with_timeout 3 git ls-remote "$remote" HEAD 2>/dev/null | cut -f1)
+        if [[ -n "$latest" ]]; then
+          { mkdir -p "${cache%/*}" && echo "$now $remote $latest" >"$cache"; } 2>/dev/null || true
+        fi
+      fi
       if [[ -n "$latest" && "$latest" != "$locked" ]]; then
         findings+=("coldlogic-devenv is behind (locked ${locked:0:7}, latest ${latest:0:7}); run: devenv update coldlogic-devenv")
       fi
