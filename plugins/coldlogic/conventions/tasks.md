@@ -1,7 +1,3 @@
 # Manual follow-ups
 
-Anything Derek has to do by hand (a secret to add, a setting to change, a decision to make) goes in a GitHub issue on the project's repo, assigned to derekjw and opened through `gh-app` (Decided 2026-10-26):
-
-    gh-app issue create --assignee derekjw --title "<what to do>" --body "<why, and the exact steps>"
-
-Say in the session that you opened it, with its link. Don't leave follow-ups only in chat, a TODO comment or a local file.
+Anything Derek has to do by hand (a secret, a setting, a decision) goes in an issue on the project's repo, never only in chat, a TODO or a local file: `gh-app issue create --assignee derekjw --title "<what to do>" --body-file -` (a heredoc, or a scratchpad file, not the repo), with why and the exact steps. Link it in the session.
