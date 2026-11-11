@@ -11,3 +11,7 @@ devenv.local.yaml
 /.claude/worktrees/
 .mcp.json
 .pre-commit-config.yaml
+# The shell generates OpenSpec's Claude Code skills and commands
+# (coldlogic:openspec-files in coldlogic-devenv).
+/.claude/skills/openspec-*/
+/.claude/commands/opsx/
