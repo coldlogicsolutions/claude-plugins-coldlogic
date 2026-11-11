@@ -13,7 +13,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 26
-      - run: npm install -g @anthropic-ai/claude-code
-      # `claude plugin validate --strict` on both manifests, except for the
-      # deliberately missing plugin version. See the script.
-      - run: scripts/validate.sh
+      # OpenSpec is pinned to the version the devenv shell provides
+      # (`openspec --version` there); bump the two together.
+      - run: npm install -g @anthropic-ai/claude-code @fission-ai/openspec@1.14.3
+      # The gate: scripts/validate.sh, which fails on any validation error or
+      # warning except the deliberately missing plugin version, then
+      # `openspec validate --all --strict`.
+      - run: scripts/check.sh
