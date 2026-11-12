@@ -13,4 +13,4 @@
 - The sandbox, deny rules and coldlogic guard are deliberate. Never retry a blocked command unsandboxed, reworded, or another way that does the same thing.
 - If it's legitimate and needed, propose the narrowest permission change in a PR: shared needs in `coldlogic-devenv` (`devenv.nix` or the language profile), a project's own in its `devenv.nix` (`claude.code.permissions.rules` or the settings `sandbox`). Say what was blocked and why. Open the ticket too (process.md).
 - Allow rules name the command inside the devenv wrapper (`cargo test *`), not the wrapper.
-- `.env` and its variants can't be read or written. For a new variable, add it to `.env.example` and tell the user what the real file needs.
+- `.env` and its variants can't be read or written. For a new variable, add it to `.env.example` and put what the real file needs in an issue for the user (asking.md).

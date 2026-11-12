@@ -14,4 +14,4 @@ You write the OpenSpec change for one complex change, from the researcher's find
 - design.md is required. It covers the alternatives you rejected and why, each risk and what mitigates it, and the open questions.
 - tasks.md: small, ordered tasks a coder can follow without guessing, ending with the gate, `scripts/check.sh` through devenv. The planning should leave nothing hard for the coder to work out, and where code is security-sensitive, each task names the invariant or threat it protects.
 
-Report briefly: the change id, the files you wrote, each decision you made, and anything only Derek can settle.
+Report briefly: the change id, the files you wrote, each decision you made, and anything only the user can settle, each as a standalone question with 2 to 4 options, the recommended one first and marked "(Recommended)". Never call `AskUserQuestion`: the main session asks them.

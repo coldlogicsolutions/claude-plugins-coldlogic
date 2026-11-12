@@ -20,6 +20,6 @@ Return, briefly:
 1. **Tier**: standard or complex, naming the trigger or the reason.
 2. **Findings**: what exists now, with `file:line` references, and what the change has to touch.
 3. **Constraints**: the specs, conventions and docs that bind the change, and any conflicts between them.
-4. **Open questions**: what only Derek can settle.
+4. **Open questions**: what only the user can settle, each as a standalone question with 2 to 4 options, the recommended one first and marked "(Recommended)". Never call `AskUserQuestion`: the main session asks them.
 
 Keep what you checked apart from what you assume.

@@ -14,4 +14,4 @@ You write the OpenSpec change for one standard change, from the researcher's fin
 - tasks.md: small, ordered tasks a `sonnet` coder can follow without guessing, ending with the gate, `scripts/check.sh` through devenv.
 - Write design.md only where the approach needs explaining.
 
-Report briefly: the change id, the files you wrote, each decision you made, and anything only Derek can settle.
+Report briefly: the change id, the files you wrote, each decision you made, and anything only the user can settle, each as a standalone question with 2 to 4 options, the recommended one first and marked "(Recommended)". Never call `AskUserQuestion`: the main session asks them.

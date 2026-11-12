@@ -16,7 +16,7 @@ dir="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/conventions"
 # "<part> <file>", in print order.
 table=(
   "1 process.md" "1 openspec.md" "1 pull-requests.md"
-  "2 devenv.md" "2 git.md" "2 github-identity.md" "2 tasks.md" "2 models.md"
+  "2 devenv.md" "2 git.md" "2 github-identity.md" "2 asking.md" "2 models.md"
 )
 
 usage() {

@@ -1,6 +1,6 @@
 # OpenSpec
 
-- Every non-trivial change (process.md) gets an OpenSpec change, in every repo. A repo without `openspec/` is a setup gap, not an exemption: ticket it in that repo, ask Derek, and carry on with other work while you wait.
+- Every non-trivial change (process.md) gets an OpenSpec change, in every repo. A repo without `openspec/` is a setup gap, not an exemption: ticket it in that repo, then ask the user about it (asking.md).
 - A trivial change has no behavior or spec change, so it has no OpenSpec change, verify or archive. If it turns out to alter spec-level behavior, it isn't trivial.
 - Call `/opsx:*` directly at each step. Don't hand-edit artifacts or work around the commands.
 - A complex change has a design.md that covers the alternatives and the risks.

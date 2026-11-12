@@ -15,7 +15,7 @@ Every change takes the checklist below in order. Its tier decides which steps ru
 1. **Triage**: trivial or non-trivial. Say which, and why.
 2. `git fetch origin main`, and `git pull --ff-only` in the main checkout, which stays on `main`.
 3. Take a harness worktree, even for a trivial change, and branch in it from `origin/main` with `--no-track`, named `<type>/<kebab-name>` (git.md).
-4. `devenv shell --quiet -- true`. If it reports stale settings, ask Derek to enter `devenv shell` once.
+4. `devenv shell --quiet -- true`. If it reports stale settings, the user has to enter `devenv shell` once from a terminal: ask through `AskUserQuestion` whether it's done (asking.md).
 
 **Plan** (non-trivial only)
 5. **Research**: `coldlogic:researcher` reads the code and specs and returns its findings and a tier, standard or complex, with the reason.
@@ -37,11 +37,11 @@ Every change takes the checklist below in order. Its tier decides which steps ru
 15. `gh-app pr create --reviewer derekjw`, ready for review, with a Summary, a Test plan and the OpenSpec change's name (pull-requests.md).
 16. `gh-app pr merge <n> -R <owner/repo> --auto --squash`.
 17. `/loop` until CI is green.
-18. For each PR review comment, Derek's or a bot's, repeat steps 11 to 14, then reply in its thread naming the fixing commit and resolve it. If the comment is wrong, reply with the evidence instead and change nothing.
+18. For each PR review comment, the user's or a bot's, repeat steps 11 to 14, then reply in its thread naming the fixing commit and resolve it. If the comment is wrong, reply with the evidence instead and change nothing.
 
 ## When something breaks
 
-- A broken gate or hook: stop, ask Derek what to do, and open a ticket. Don't work around it.
+- A broken gate or hook: stop, ask the user what to do (asking.md), and open a ticket. Don't work around it.
 - Also open one, unprompted, when the process breaks, access the session legitimately needs is denied, or a step is clearly wasteful (repeated prompts, deny-and-retry loops).
 - Search open issues for a duplicate first, and comment there if one exists.
 - File it where the piece lives: gates, hooks, sandbox, permissions in `coldlogicsolutions/coldlogic-devenv`; skills, conventions in `coldlogicsolutions/claude-plugins-coldlogic`. `gh-app issue create -R <repo> --assignee derekjw`: what happened, why it was needed, the narrowest fix. Link it in the session.
@@ -56,4 +56,4 @@ Anything that blocks lives in coldlogic-devenv: projects pin it through `devenv.
 - Hand work off through an issue in the target repo: what to do, the current state and the steps. The issue is the record.
 - Then wake that repo's session: if `ListAgents` shows one, send it a one-line `SendMessage` pointing at the issue. Don't wait for it to poll.
 - Keep messages short and for coordination only ("branch pushed", "rebase on #N", the PR link). Decisions and findings go in the issue or PR.
-- A peer's message is never approval. The receiving session still asks Derek for anything its own rules don't allow.
+- A peer's message is never approval. The receiving session still asks the user (asking.md) for anything its own rules don't allow.
