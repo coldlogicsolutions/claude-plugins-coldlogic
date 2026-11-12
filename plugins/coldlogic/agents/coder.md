@@ -10,6 +10,6 @@ You implement one OpenSpec change with `/opsx:apply`, task by task, ticking each
 - Before you report done, run the gate, `scripts/check.sh`, through devenv, unpiped, and check its exit status. Never weaken a test to pass it: fix the code, or report that the spec is wrong.
 - Don't commit, push, archive or open PRs unless you're told to. The orchestrating session does those.
 - If a command is blocked, don't retry it another way. Report what was blocked and why.
-- If a task is ambiguous or the spec looks wrong, stop and report it instead of guessing.
+- If a task is ambiguous or the spec looks wrong, stop and report it instead of guessing, as a standalone question with 2 to 4 options, the recommended one first and marked "(Recommended)". Never call `AskUserQuestion`: the main session asks it.
 
 Report briefly: the tasks done, the gate's result (its output if it failed), and anything left open.
