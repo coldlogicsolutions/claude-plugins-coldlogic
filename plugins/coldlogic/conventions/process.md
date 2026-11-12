@@ -1,18 +1,43 @@
 # Dev process (mandatory)
 
-Every change takes these steps in order. Only a trivial change (below) skips any.
+Every change takes the checklist below in order. Its tier decides which steps run, which agents do them and how hard review looks.
 
-1. **Triage**: standard or trivial. Say which.
-2. **Branch** from an up-to-date `origin/main` (git.md).
-3. **Plan**: an `opus` planning agent writes the OpenSpec change (openspec.md). No sign-off: implement once it's written. A wrong spec is fixed in review.
-4. **Implement** with the right models and agents (models.md), a Workflow for large fan-outs.
-5. **Gate**: `scripts/check.sh` passes (devenv.md). A trivial change then runs `/opsx:verify` where the repo has `openspec/`.
-6. **Archive**: `/opsx:archive`.
-7. **Review**, before any push or PR: `/code-review` over the whole branch against `origin/main`, naming untracked files (new OpenSpec artifacts) so they're included. Fix findings and re-review the final diff.
-8. **Commit, push, PR** (pull-requests.md).
-9. **`/loop`** until the PR is green.
+## Tiers
 
-**Trivial** means a single-line change, nothing bigger. It skips steps 3 and 6 only, and never stalls on a missing `openspec/`. It never skips review (`/code-review low` at least), and its commit carries a `Process: trivial (<reason>)` trailer.
+- **Trivial**: no behavior or spec change, such as typos, comments or version bumps. In conventions, agent briefs and specs, only a wording fix that changes no rule is trivial. It skips the Plan steps and the archive, never stalls on a missing `openspec/`, reviews at `low`, and its commit carries a `Process: trivial (<reason>)` trailer. If it turns out to change behavior, it's non-trivial: go to step 5, give the researcher the diff as the starting point, drop the trivial trailer, and review at the new tier's level.
+- **Standard**: the researcher judges it so. Planned by `coldlogic:planner`, reviewed at `medium`.
+- **Complex**: the researcher judges it so. Planned by `coldlogic:planner-plus` with a design.md covering alternatives and risks, reviewed at `high`. Triggers: security-sensitive work (auth, crypto, sandbox, guard, permissions), a cross-cutting refactor, cross-repo work, more than one spec capability, or an unclear approach.
+- A tier only moves up. Re-reviews use the tier's level. The agents are in models.md.
+
+## Checklist
+
+**Setup**
+1. **Triage**: trivial or non-trivial. Say which, and why.
+2. `git fetch origin main`, and `git pull --ff-only` in the main checkout, which stays on `main`.
+3. Take a harness worktree, even for a trivial change, and branch in it from `origin/main` with `--no-track`, named `<type>/<kebab-name>` (git.md).
+4. `devenv shell --quiet -- true`. If it reports stale settings, ask Derek to enter `devenv shell` once.
+
+**Plan** (non-trivial only)
+5. **Research**: `coldlogic:researcher` reads the code and specs and returns its findings and a tier, standard or complex, with the reason.
+6. **Plan**: `coldlogic:planner` (standard) or `coldlogic:planner-plus` (complex) gets the findings and writes the OpenSpec change with `/opsx:*` (openspec.md). No sign-off: implement once it's written. A wrong spec is fixed in review.
+
+**Build**
+7. **Implement**: a trivial change directly; otherwise `/opsx:apply` through `coldlogic:coder`, or `coldlogic:coder-plus` for hard or security-sensitive code. A Workflow for a large fan-out.
+8. **Gate**: `scripts/check.sh` through devenv, unpiped, checking its exit status (devenv.md).
+9. **Archive** (non-trivial only, by the main session): `/opsx:verify` (a gap goes back to step 7), then `/opsx:archive`, then the gate again.
+
+**Review**
+10. `/code-review <tier level>` over the whole branch against `origin/main`, naming untracked files (new OpenSpec artifacts) so they're included.
+11. Fix the findings, rerun the gate, and re-review the final diff at the same level until it's clean.
+12. If a fix changes the archived tasks, design or specs, update them on the branch (openspec.md).
+
+**Ship**
+13. Commit: a conventional message, the Co-Authored-By trailer, and the trivial trailer for a trivial change (git.md, github-identity.md, Tiers).
+14. Push over SSH. Retry once after a network error, never after a denial.
+15. `gh-app pr create --reviewer derekjw`, ready for review, with a Summary, a Test plan and the OpenSpec change's name (pull-requests.md).
+16. `gh-app pr merge <n> -R <owner/repo> --auto --squash`.
+17. `/loop` until CI is green.
+18. For each PR review comment, Derek's or a bot's, repeat steps 11 to 14, then reply in its thread naming the fixing commit and resolve it. If the comment is wrong, reply with the evidence instead and change nothing.
 
 ## When something breaks
 

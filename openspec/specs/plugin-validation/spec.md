@@ -58,12 +58,16 @@ Tested by: none (exercised by hand when this change was made).
 - **THEN** the syntax check passes
 
 ### Requirement: Failures are collected
-`scripts/validate.sh` SHALL run every check even after one fails: the manifest validations, the syntax check, and the conventions checks (see `conventions-injection`), except that the conventions checks, which all need `conventions.sh --list`, are skipped when it fails. It SHALL print a message for each failure and exit non-zero if any failed, zero only when all pass.
+`scripts/validate.sh` SHALL run every check even after one fails: the manifest validations, the syntax check, the agents checks (see `plugin-agents`), and the conventions checks (see `conventions-injection`), except that the conventions checks, which all need `conventions.sh --list`, are skipped when it fails. It SHALL print a message for each failure and exit non-zero if any failed, zero only when all pass.
 
 Tested by: none (exercised by hand when this change was made).
 
 #### Scenario: Two failures
 - **WHEN** a manifest has a validation error and one conventions part is over budget
+- **THEN** the script reports both and exits non-zero
+
+#### Scenario: An agent failure and a conventions failure
+- **WHEN** `researcher.md` lists `Edit` and one conventions part is over budget
 - **THEN** the script reports both and exits non-zero
 
 #### Scenario: Validator output that isn't JSON
