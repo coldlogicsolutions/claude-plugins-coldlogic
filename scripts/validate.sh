@@ -40,6 +40,107 @@ for script in plugins/coldlogic/scripts/*.sh; do
   fi
 done
 
+# The plugin's agents: "<name> <model> <writes>", where <writes> is what the
+# agent may change: none, changes (OpenSpec changes only) or any. Every
+# agents/*.md is listed here, and its frontmatter must match its entry. Tools
+# can't confine an agent to a path, so the `changes` limit is the brief's.
+agents=(
+  "researcher fable none" "planner opus changes" "planner-plus fable changes"
+  "coder sonnet any" "coder-plus opus any"
+)
+agents_dir=plugins/coldlogic/agents
+
+# Prints each top-level `key: value` line of a file's frontmatter as `key value`.
+frontmatter() {
+  awk 'NR == 1 { if ($0 != "---") exit; next }
+    $0 == "---" { exit }
+    /^[A-Za-z][A-Za-z0-9_-]*:/ {
+      k = $0; sub(/:.*/, "", k)
+      v = substr($0, length(k) + 2); gsub(/^[ \t]+|[ \t]+$/, "", v)
+      print k, v
+    }' "$1"
+}
+field() { awk -v k="$1" '$1 == k { sub(/^[^ ]+ ?/, ""); print; exit }' <<<"$2"; }
+has_field() { awk -v k="$1" '$1 == k { f = 1 } END { exit !f }' <<<"$2"; }
+
+check_agents() {
+  local path f entry name model writes fm value tool key
+  local -a tools
+  for path in "$agents_dir"/*.md; do
+    [[ -e $path ]] || continue
+    f=${path##*/}
+    if ! printf '%s\n' "${agents[@]}" | awk -v n="${f%.md}" '$1 == n { f = 1 } END { exit !f }'; then
+      echo "agents: $f is not in the agents table" >&2
+      status=1
+    fi
+  done
+  for entry in "${agents[@]}"; do
+    read -r name model writes <<<"$entry"
+    f=$name.md
+    path=$agents_dir/$f
+    if [[ ! -f $path ]]; then
+      echo "agents: $name is in the table but $f doesn't exist" >&2
+      status=1
+      continue
+    fi
+    fm=$(frontmatter "$path")
+    value=$(field name "$fm")
+    if [[ $value != "$name" ]]; then
+      echo "agents: $f: name is '$value', not '$name'" >&2
+      status=1
+    fi
+    value=$(field model "$fm")
+    case $value in
+      haiku | sonnet | opus | fable)
+        if [[ $value != "$model" ]]; then
+          echo "agents: $f: model is $value, the table says $model" >&2
+          status=1
+        fi
+        ;;
+      *)
+        echo "agents: $f: model '$value' isn't an alias (haiku, sonnet, opus, fable)" >&2
+        status=1
+        ;;
+    esac
+    for key in hooks mcpServers permissionMode; do
+      if has_field "$key" "$fm"; then
+        echo "agents: $f: plugin agents ignore $key" >&2
+        status=1
+      fi
+    done
+    [[ $writes == any ]] && continue
+    value=$(field tools "$fm")
+    # Only a bare comma-separated list can be checked tool by tool: a flow list,
+    # quotes, a wildcard, a specifier like Edit(x) or a comment would hide a
+    # write tool from the check below.
+    if [[ -z $value || $value == *[][\"\'*\(\#]* ]]; then
+      echo "agents: $f: no one-line tools list, so it would get every tool" >&2
+      status=1
+      continue
+    fi
+    IFS=, read -ra tools <<<"$value"
+    for tool in "${tools[@]}"; do
+      tool=${tool#"${tool%%[![:space:]]*}"}
+      tool=${tool%"${tool##*[![:space:]]}"}
+      # `Read Edit` would otherwise pass as one unknown tool.
+      if [[ $tool == *[[:space:]]* ]]; then
+        echo "agents: $f: tools must be comma-separated, not '$tool'" >&2
+        status=1
+        continue
+      fi
+      case $tool in
+        Write | Edit | NotebookEdit)
+          if [[ $writes == none ]]; then
+            echo "agents: $f: a read-only agent lists $tool" >&2
+            status=1
+          fi
+          ;;
+      esac
+    done
+  done
+}
+check_agents
+
 # The conventions are printed in parts, one SessionStart hook each. Check that
 # every conventions file is in exactly one part, that hooks.json runs exactly
 # the parts in the table, and that each part stays under a margin below the

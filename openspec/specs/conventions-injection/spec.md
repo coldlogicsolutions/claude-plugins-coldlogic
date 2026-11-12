@@ -24,8 +24,8 @@ The script SHALL assign every `conventions/*.md` file to exactly one part in a s
 Tested by: `scripts/validate.sh` checks every file is in exactly one part; nothing checks the order within a part.
 
 #### Scenario: Order of the output
-- **WHEN** the table's part 1 is `process.md`, `openspec.md`, `models.md`, `pull-requests.md` and there are two parts
-- **THEN** `conventions.sh 1` prints `# coldlogic conventions, part 1 of 2`, then those four files in that order
+- **WHEN** the table's part 1 is `process.md`, `openspec.md`, `pull-requests.md` and there are two parts
+- **THEN** `conventions.sh 1` prints `# coldlogic conventions, part 1 of 2`, then those three files in that order
 
 #### Scenario: A new conventions file
 - **WHEN** a change adds `conventions/new.md`
