@@ -3,11 +3,11 @@
     "coldlogic-devenv": {
       "flake": false,
       "locked": {
-        "lastModified": 1794510802,
-        "narHash": "sha256-FUhIdOIatA2OcbsA69cxKGii18NBxrMpikOLgMxBoUA=",
+        "lastModified": 1794612518,
+        "narHash": "sha256-fdHpB0mFwwgARNiimGTxq8toL27G0qckZ5FtHQyfGAI=",
         "owner": "coldlogicsolutions",
         "repo": "coldlogic-devenv",
-        "rev": "38758ed827a9c8dfd278a089528dcdf581c7ab92",
+        "rev": "0a5f90e0a81f8bce5f3c94ea06123c6dec660843",
         "type": "github"
       },
       "original": {
