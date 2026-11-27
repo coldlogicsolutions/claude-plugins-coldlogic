@@ -15,20 +15,24 @@ Tested by: `scripts/validate.sh` (schema only).
 - **THEN** its `name` is `coldlogic-plugins` and its `plugins` array holds one entry, `coldlogic`, with source `./plugins/coldlogic`
 
 ### Requirement: The plugin declares the shared plugin set as dependencies
-`plugins/coldlogic/.claude-plugin/plugin.json` SHALL declare as `dependencies` `codex@openai-codex`, and `pr-review-toolkit`, `code-review`, `commit-commands` and `context7` from `claude-plugins-official`. The README relies on Claude Code installing them when `coldlogic` is enabled; nothing in this repository checks that.
+`plugins/coldlogic/.claude-plugin/plugin.json` SHALL declare as `dependencies` `pr-review-toolkit`, `code-review`, `commit-commands` and `context7` from `claude-plugins-official`. The README relies on Claude Code installing them when `coldlogic` is enabled; nothing in this repository checks that.
 
 Tested by: `scripts/validate.sh` (schema only).
 
 #### Scenario: Declared dependencies
 - **WHEN** `plugin.json` is read
-- **THEN** `dependencies` lists exactly those five plugins
+- **THEN** `dependencies` lists exactly those four plugins
+
+#### Scenario: Codex is not a dependency
+- **WHEN** `plugin.json` is read
+- **THEN** `dependencies` does not list `codex@openai-codex`, which is off to save cost; Claude Code refuses to load a plugin whose dependency is disabled, so a project that disables Codex would lose this plugin too
 
 #### Scenario: Adding a plugin everywhere
 - **WHEN** a change adds a line to `dependencies`
 - **THEN** the change touches only `plugin.json` (and `marketplace.json` if the plugin comes from a marketplace not yet listed)
 
 ### Requirement: Dependency marketplaces are listed for cross-marketplace use
-The marketplace SHALL list in `allowCrossMarketplaceDependenciesOn` each other marketplace a dependency comes from: `claude-plugins-official` and `openai-codex`.
+The marketplace SHALL list in `allowCrossMarketplaceDependenciesOn` each other marketplace a dependency comes from: `claude-plugins-official`.
 
 Tested by: `scripts/validate.sh` (schema only).
 

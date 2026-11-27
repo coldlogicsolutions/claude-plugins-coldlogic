@@ -6,7 +6,6 @@
     "email": "derek@coldlogic.dev"
   },
   "dependencies": [
-    "codex@openai-codex",
     "pr-review-toolkit@claude-plugins-official",
     "code-review@claude-plugins-official",
     "commit-commands@claude-plugins-official",
